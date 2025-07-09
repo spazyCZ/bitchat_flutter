@@ -84,4 +84,34 @@ class BitchatMessage {
     }
     return sender;
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'sender': sender,
+    'content': content,
+    'timestamp': timestamp.toIso8601String(),
+    'isRelay': isRelay,
+    'originalSender': originalSender,
+    'isPrivate': isPrivate,
+    'recipientNickname': recipientNickname,
+    'senderPeerID': senderPeerID,
+    'mentions': mentions,
+    'channel': channel,
+  };
+
+  factory BitchatMessage.fromJson(Map<String, dynamic> json) => BitchatMessage(
+    id: json['id'],
+    sender: json['sender'],
+    content: json['content'],
+    timestamp: DateTime.parse(json['timestamp']),
+    isRelay: json['isRelay'] ?? false,
+    originalSender: json['originalSender'],
+    isPrivate: json['isPrivate'] ?? false,
+    recipientNickname: json['recipientNickname'],
+    senderPeerID: json['senderPeerID'],
+    mentions: (json['mentions'] as List?)?.cast<String>(),
+    channel: json['channel'],
+  );
+
+  static String generateMessageId() => _generateMessageId();
 }

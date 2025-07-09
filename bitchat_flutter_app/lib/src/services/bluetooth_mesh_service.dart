@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:cryptography/cryptography.dart';
 import '../models/bitchat_packet.dart';
 import '../services/binary_protocol.dart';
+import 'encryption_service.dart';
 
 /// Bluetooth Low Energy mesh networking service for bitchat
 class BluetoothMeshService {
@@ -22,6 +24,13 @@ class BluetoothMeshService {
   final Map<String, BluetoothDevice> _connectedDevices = {};
   String _myPeerID = '';
   String _nickname = '';
+  final EncryptionService _encryptionService = EncryptionService();
+  final Map<String, Uint8List> _peerPublicKeys = {};
+  final Map<String, SecretKey> _sharedSecrets = {};
+
+  // For duplicate detection
+  final Set<String> _recentMessageIds = <String>{};
+  static const int _maxRecentMessages = 500;
 
   // Getters for streams
   Stream<BitchatPacket> get messageStream => _messageStreamController.stream;
@@ -39,7 +48,8 @@ class BluetoothMeshService {
   Future<void> initialize(String nickname) async {
     _nickname = nickname;
     _myPeerID = _generatePeerID();
-    
+    await _encryptionService.generateKeyPair();
+
     // Check if Bluetooth is available and enabled
     if (await FlutterBluePlus.isSupported == false) {
       throw Exception('Bluetooth not supported');
@@ -68,7 +78,7 @@ class BluetoothMeshService {
 
     try {
       _isScanning = true;
-      
+
       // Listen for scan results
       FlutterBluePlus.scanResults.listen((results) {
         for (ScanResult result in results) {
@@ -80,7 +90,6 @@ class BluetoothMeshService {
       await FlutterBluePlus.startScan(
         withServices: [Guid(serviceUUID)],
         timeout: const Duration(seconds: 30),
-        allowDuplicates: true,
       );
     } catch (e) {
       print('Error starting scan: $e');
@@ -91,7 +100,7 @@ class BluetoothMeshService {
   /// Stop scanning
   Future<void> stopScanning() async {
     if (!_isScanning) return;
-    
+
     await FlutterBluePlus.stopScan();
     _isScanning = false;
   }
@@ -117,10 +126,14 @@ class BluetoothMeshService {
     String? recipientID,
     int ttl = 3,
   }) async {
+    Uint8List encryptedPayload = payload;
+    if (recipientID != null && _sharedSecrets.containsKey(recipientID)) {
+      encryptedPayload = await _encryptionService.encrypt(payload, _sharedSecrets[recipientID]!);
+    }
     final packet = BitchatPacket.create(
       messageType: type,
       senderIDString: _myPeerID,
-      payload: payload,
+      payload: encryptedPayload,
       recipientIDString: recipientID,
       ttl: ttl,
     );
@@ -140,7 +153,7 @@ class BluetoothMeshService {
   /// Handle scan result - attempt to connect to discovered peers
   void _handleScanResult(ScanResult result) async {
     final device = result.device;
-    
+
     // Skip if already connected
     if (_connectedDevices.containsKey(device.remoteId.toString())) {
       return;
@@ -149,10 +162,10 @@ class BluetoothMeshService {
     try {
       // Connect to the device
       await device.connect(timeout: const Duration(seconds: 10));
-      
+
       // Discover services
       List<BluetoothService> services = await device.discoverServices();
-      
+
       for (BluetoothService service in services) {
         if (service.uuid.toString().toUpperCase() == serviceUUID.toUpperCase()) {
           await _handleService(device, service);
@@ -168,11 +181,11 @@ class BluetoothMeshService {
   Future<void> _handleService(BluetoothDevice device, BluetoothService service) async {
     for (BluetoothCharacteristic characteristic in service.characteristics) {
       if (characteristic.uuid.toString().toUpperCase() == characteristicUUID.toUpperCase()) {
-        
+
         // Subscribe to notifications
         if (characteristic.properties.notify) {
           await characteristic.setNotifyValue(true);
-          
+
           // Listen for incoming data
           characteristic.lastValueStream.listen((data) {
             _handleIncomingData(device, Uint8List.fromList(data));
@@ -181,25 +194,25 @@ class BluetoothMeshService {
 
         // Store the connection
         _connectedDevices[device.remoteId.toString()] = device;
-        
+
         // Send announcement
         await _sendAnnouncement(device, characteristic);
-        
+
         break;
       }
     }
   }
 
-  /// Send announcement message to a newly connected peer
+  /// Send our public key as part of announcement
   Future<void> _sendAnnouncement(BluetoothDevice device, BluetoothCharacteristic characteristic) async {
-    final announcePayload = Uint8List.fromList(_nickname.codeUnits);
+    final pubKey = await _encryptionService.getPublicKeyBytes();
+    final announcePayload = Uint8List.fromList([..._nickname.codeUnits, ...?pubKey]);
     final packet = BitchatPacket.create(
       messageType: MessageType.announce,
       senderIDString: _myPeerID,
       payload: announcePayload,
-      ttl: 1, // Don't relay announcements
+      ttl: 1,
     );
-
     final binaryData = BinaryProtocol.encode(packet);
     if (binaryData != null) {
       try {
@@ -210,11 +223,26 @@ class BluetoothMeshService {
     }
   }
 
+  /// Parse public key from announcement and compute shared secret
+  void _handleAnnouncement(BluetoothDevice device, BitchatPacket packet) async {
+    final payload = packet.payload;
+    final peerNickname = String.fromCharCodes(payload.sublist(0, payload.length - 32));
+    final peerPubKey = payload.sublist(payload.length - 32);
+    final peerID = packet.senderIDString;
+    if (!_connectedPeers.contains(peerID)) {
+      _connectedPeers.add(peerID);
+      _peerStreamController.add(peerID);
+      print('Peer joined: $peerNickname ($peerID)');
+    }
+    _peerPublicKeys[peerID] = peerPubKey;
+    _sharedSecrets[peerID] = await _encryptionService.computeSharedSecret(peerPubKey);
+  }
+
   /// Send binary data to a specific device
   Future<void> _sendDataToDevice(BluetoothDevice device, Uint8List data) async {
     try {
       List<BluetoothService> services = await device.discoverServices();
-      
+
       for (BluetoothService service in services) {
         if (service.uuid.toString().toUpperCase() == serviceUUID.toUpperCase()) {
           for (BluetoothCharacteristic characteristic in service.characteristics) {
@@ -239,7 +267,27 @@ class BluetoothMeshService {
       print('Failed to decode incoming packet');
       return;
     }
-
+    if (packet.type == MessageType.message.value && packet.senderIDString != _myPeerID) {
+      final peerID = packet.senderIDString;
+      if (_sharedSecrets.containsKey(peerID)) {
+        _encryptionService.decrypt(packet.payload, _sharedSecrets[peerID]!).then((decrypted) {
+          final decryptedPacket = BitchatPacket(
+            version: packet.version,
+            type: packet.type,
+            ttl: packet.ttl,
+            timestamp: packet.timestamp,
+            senderID: packet.senderID,
+            recipientID: packet.recipientID,
+            payload: decrypted,
+            signature: packet.signature,
+          );
+          _handleMessage(decryptedPacket);
+        }).catchError((_) {
+          print('Failed to decrypt message from $peerID');
+        });
+        return;
+      }
+    }
     // Handle different message types
     switch (MessageType.fromValue(packet.type)) {
       case MessageType.announce:
@@ -254,34 +302,36 @@ class BluetoothMeshService {
     }
   }
 
-  /// Handle peer announcement
-  void _handleAnnouncement(BluetoothDevice device, BitchatPacket packet) {
-    final peerNickname = String.fromCharCodes(packet.payload);
-    final peerID = packet.senderIDString;
-    
-    if (!_connectedPeers.contains(peerID)) {
-      _connectedPeers.add(peerID);
-      _peerStreamController.add(peerID);
-      print('Peer joined: $peerNickname ($peerID)');
-    }
-  }
-
   /// Handle regular message
   void _handleMessage(BitchatPacket packet) {
+    final messageId = _generateMessageIdFromPacket(packet);
+    if (_recentMessageIds.contains(messageId)) {
+      // Duplicate detected, ignore
+      return;
+    }
+    _recentMessageIds.add(messageId);
+    if (_recentMessageIds.length > _maxRecentMessages) {
+      _recentMessageIds.remove(_recentMessageIds.first);
+    }
     // Forward to listeners
     _messageStreamController.add(packet);
-    
+
     // Relay message if TTL > 0 and we're not the sender
     if (packet.ttl > 0 && packet.senderIDString != _myPeerID) {
       _relayMessage(packet);
     }
   }
 
+  String _generateMessageIdFromPacket(BitchatPacket packet) {
+    // Use senderID + timestamp + type as a unique identifier
+    return '${packet.senderIDString}_${packet.timestamp}_${packet.type}';
+  }
+
   /// Relay message to other peers
   void _relayMessage(BitchatPacket packet) async {
     final relayPacket = packet.decrementTTL();
     final binaryData = BinaryProtocol.encode(relayPacket);
-    
+
     if (binaryData != null) {
       for (final device in _connectedDevices.values) {
         await _sendDataToDevice(device, binaryData);
@@ -294,6 +344,24 @@ class BluetoothMeshService {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp % 10000).toString().padLeft(4, '0');
     return 'peer$random';
+  }
+
+  // Channel password management
+  final Map<String, String> _channelPasswords = {};
+
+  /// Set a password for a channel
+  void setChannelPassword(String channel, String password) {
+    _channelPasswords[channel] = password;
+  }
+
+  /// Get the password for a channel (if any)
+  String? getChannelPassword(String channel) {
+    return _channelPasswords[channel];
+  }
+
+  /// Verify a password for a channel
+  bool verifyChannelPassword(String channel, String password) {
+    return _channelPasswords[channel] == password;
   }
 
   /// Stop all networking activities

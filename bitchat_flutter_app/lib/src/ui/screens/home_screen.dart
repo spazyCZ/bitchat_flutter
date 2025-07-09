@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/chat_view_model.dart';
-import '../models/bitchat_message.dart';
+import 'package:bitchat_flutter/src/services/chat_view_model.dart';
+import 'package:bitchat_flutter/src/models/bitchat_message.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -70,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   color: Colors.green,
                   fontFamily: 'monospace',
+                  fontSize: 24, // Increased font size
                 ),
               ),
             ],
@@ -87,13 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontFamily: 'monospace',
                 fontWeight: FontWeight.bold,
+                fontSize: 32, // Increased font size
               ),
             ),
             const SizedBox(width: 8),
             Text(
               _chatViewModel.nickname,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 20, // Increased font size
                 fontFamily: 'monospace',
                 color: Colors.green,
               ),
@@ -113,11 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: Colors.green.withOpacity(0.1),
               child: Text(
-                'Channel: ${_chatViewModel.currentChannel}',
+                'Channel: [36m[1m[4m[7m[0m[0m[0m[0m${_chatViewModel.currentChannel}',
                 style: const TextStyle(
                   color: Colors.green,
                   fontFamily: 'monospace',
-                  fontSize: 12,
+                  fontSize: 16, // Increased font size
                 ),
               ),
             ),
@@ -180,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             color: Colors.green.withOpacity(0.7),
             fontFamily: 'monospace',
-            fontSize: 12,
+            fontSize: 18, // Increased font size
             fontStyle: FontStyle.italic,
           ),
         ),
@@ -217,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(
                 color: Colors.green,
                 fontFamily: 'monospace',
-                fontSize: 12,
+                fontSize: 18, // Increased font size
               ),
             ),
           ),
@@ -309,7 +311,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              ..._chatViewModel.connectedPeers.map(
+              ...(_chatViewModel.connectedPeers.toList()
+                ..sort((a, b) {
+                  final nameA = _chatViewModel.peerNicknames[a] ?? a;
+                  final nameB = _chatViewModel.peerNicknames[b] ?? b;
+                  return nameA.compareTo(nameB);
+                })
+              ).map(
                 (peerID) => Text(
                   '• ${_chatViewModel.peerNicknames[peerID] ?? peerID}',
                   style: const TextStyle(

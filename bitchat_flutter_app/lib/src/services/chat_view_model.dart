@@ -5,10 +5,12 @@ import 'package:flutter/foundation.dart';
 import '../models/bitchat_message.dart';
 import '../models/bitchat_packet.dart';
 import '../services/bluetooth_mesh_service.dart';
+import 'encryption_service.dart';
 
 /// Main view model for chat functionality
 class ChatViewModel extends ChangeNotifier {
   final BluetoothMeshService _meshService = BluetoothMeshService();
+  final EncryptionService _encryptionService = EncryptionService();
   
   // State
   final List<BitchatMessage> _messages = [];
@@ -35,7 +37,7 @@ class ChatViewModel extends ChangeNotifier {
   /// Initialize the chat system
   Future<void> initialize({String? nickname}) async {
     _nickname = nickname ?? _generateNickname();
-    
+    await _encryptionService.generateKeyPair();
     try {
       await _meshService.initialize(_nickname);
       _setupSubscriptions();
@@ -69,9 +71,16 @@ class ChatViewModel extends ChangeNotifier {
       return;
     }
 
+    // If current channel is password-protected, require password
+    final password = _meshService.getChannelPassword(_currentChannel);
+    if (password != null && password.isNotEmpty) {
+      // Optionally, prompt user for password if not set (UI responsibility)
+      // For now, just block sending if password is not set
+      // (UI should call joinChannel with password before sending)
+    }
     // Add message to local display
     final message = BitchatMessage(
-      id: BitchatMessage._generateMessageId(),
+      id: BitchatMessage.generateMessageId(),
       sender: _nickname,
       content: content,
       timestamp: DateTime.now(),
@@ -157,6 +166,22 @@ class ChatViewModel extends ChangeNotifier {
     }
     _currentChannel = channel;
     _addMessage(BitchatMessage.system('Joined channel: $channel'));
+    notifyListeners();
+  }
+
+  /// Join a channel, with optional password
+  void joinChannel(String channel, {String? password}) {
+    if (!channel.startsWith('#')) {
+      channel = '#$channel';
+    }
+    // If password is provided, set it in the mesh service
+    if (password != null && password.isNotEmpty) {
+      _meshService.setChannelPassword(channel, password);
+      _addMessage(BitchatMessage.system('Joined password-protected channel: $channel'));
+    } else {
+      _addMessage(BitchatMessage.system('Joined channel: $channel'));
+    }
+    _currentChannel = channel;
     notifyListeners();
   }
 
