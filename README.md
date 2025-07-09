@@ -1,6 +1,8 @@
 ![ChatGPT Image Jul 5, 2025 at 06_07_31 PM](https://github.com/user-attachments/assets/2660f828-49c7-444d-beca-d8b01854667a)
 # bitchat
 
+> **Note:** This project is based on a fork of [jackjackbits/bitchat](https://github.com/jackjackbits/bitchat) by [@jackjackbits](https://github.com/jackjackbits).
+
 A secure, decentralized, peer-to-peer messaging app that works over Bluetooth mesh networks. No internet required, no servers, no phone numbers - just pure encrypted communication.
 
 ## License
