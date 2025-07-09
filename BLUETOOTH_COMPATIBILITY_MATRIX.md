@@ -4,18 +4,28 @@ This document outlines the Bluetooth Low Energy (BLE) support across different p
 
 ---
 
-## ✅ Summary Table
+--
 
-| Platform   | BLE Support     | Notes                                                                 | Recommended Libraries / Plugins                         |
-|------------|------------------|-----------------------------------------------------------------------|----------------------------------------------------------|
-| **Android**| ✅ Full          | Fully supported by mature plugins.                                   | [`flutter_blue`](https://pub.dev/packages/flutter_blue), [`flutter_reactive_ble`](https://pub.dev/packages/flutter_reactive_ble) |
-| **iOS**    | ✅ Full          | Well-supported. Requires permissions in `Info.plist`.                 | [`flutter_blue`](https://pub.dev/packages/flutter_blue), [`flutter_reactive_ble`](https://pub.dev/packages/flutter_reactive_ble) |
-| **macOS**  | 🟡 Partial       | CoreBluetooth works. Plugin may require patching.                     | [`flutter_blue`](https://pub.dev/packages/flutter_blue) (partial), custom Swift plugin via platform channels |
-| **Windows**| 🟡 Partial       | BLE works via UWP. Plugin available, but limited features.            | [`win_ble`](https://pub.dev/packages/win_ble), custom FFI (C++/WinRT) |
-| **Linux**  | 🔴 Minimal       | No official plugin. Requires custom FFI or DBus/BlueZ integration.    | [`dbus`](https://pub.dev/packages/dbus), native FFI, `flutter_rust_bridge` |
-| **Web**    | 🔴 Not Supported | Web Bluetooth available only through JavaScript interop.              | N/A – requires `dart:js` and Web Bluetooth API            |
+## ✅  Bluetooth suuport with 3rd-Party Libraries
 
----
+| Library / Package | Description                                       | Supported Platforms                   |
+|-------------------|---------------------------------------------------|----------------------------------------|
+| `flutter_blue`    | Cross-platform BLE support (scan/connect/etc)     | Android, iOS, 🟡 macOS (partial)       |
+| `flutter_reactive_ble` | Reactive BLE library with stream support     | Android, iOS                          |
+| `win_ble`         | Basic BLE support using Windows UWP API           | Windows                                |
+| `dbus`            | Dart D-Bus client for native Linux BlueZ access   | Linux                                  |
+| `flutter_rust_bridge` | Rust interop layer to create native extensions | All native platforms                   |
+| `dart:ffi`        | Dart foreign function interface for native calls  | All native platforms                   |
+| `dart:js` / `package:js` | JavaScript interop for Web Bluetooth       | Web                                    |
+
+
+
+
+
+
+
+
+-
 
 ## 🔧 Notes on Platform-Specific Support
 
@@ -52,19 +62,6 @@ This document outlines the Bluetooth Low Energy (BLE) support across different p
   - Custom JavaScript interop using `dart:js`
   - Implementing a Flutter plugin that wraps JS APIs
 
----
-
-## 🔌 Recommended 3rd-Party Libraries
-
-| Library / Package | Description                                       | Supported Platforms                   |
-|-------------------|---------------------------------------------------|----------------------------------------|
-| `flutter_blue`    | Cross-platform BLE support (scan/connect/etc)     | Android, iOS, 🟡 macOS (partial)       |
-| `flutter_reactive_ble` | Reactive BLE library with stream support     | Android, iOS                          |
-| `win_ble`         | Basic BLE support using Windows UWP API           | Windows                                |
-| `dbus`            | Dart D-Bus client for native Linux BlueZ access   | Linux                                  |
-| `flutter_rust_bridge` | Rust interop layer to create native extensions | All native platforms                   |
-| `dart:ffi`        | Dart foreign function interface for native calls  | All native platforms                   |
-| `dart:js` / `package:js` | JavaScript interop for Web Bluetooth       | Web                                    |
 
 ---
 
@@ -83,3 +80,19 @@ This document outlines the Bluetooth Low Energy (BLE) support across different p
      ├── ble_macos.dart
      ├── ble_windows.dart
      └── ble_linux.dart
+
+
+
+
+
+
+## Flutter native Summary Table
+
+| Platform   | BLE Support     | Notes                                                                 | Recommended Libraries / Plugins                         |
+|------------|------------------|-----------------------------------------------------------------------|----------------------------------------------------------|
+| **Android**| ✅ Full          | Fully supported by mature plugins.                                   | [`flutter_blue`](https://pub.dev/packages/flutter_blue), [`flutter_reactive_ble`](https://pub.dev/packages/flutter_reactive_ble) |
+| **iOS**    | ✅ Full          | Well-supported. Requires permissions in `Info.plist`.                 | [`flutter_blue`](https://pub.dev/packages/flutter_blue), [`flutter_reactive_ble`](https://pub.dev/packages/flutter_reactive_ble) |
+| **macOS**  | 🟡 Partial       | CoreBluetooth works. Plugin may require patching.                     | [`flutter_blue`](https://pub.dev/packages/flutter_blue) (partial), custom Swift plugin via platform channels |
+| **Windows**| 🟡 Partial       | BLE works via UWP. Plugin available, but limited features.            | [`win_ble`](https://pub.dev/packages/win_ble), custom FFI (C++/WinRT) |
+| **Linux**  | 🔴 Minimal       | No official plugin. Requires custom FFI or DBus/BlueZ integration.    | [`dbus`](https://pub.dev/packages/dbus), native FFI, `flutter_rust_bridge` |
+| **Web**    | 🔴 Not Supported | Web Bluetooth available only through JavaScript interop.              | N/A – requires `dart:js` and Web Bluetooth API            |
