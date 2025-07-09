@@ -1,66 +1,26 @@
-# Xcode
-#
-# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
-
-## User settings
-xcuserdata/
-
-## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
-*.xcscmblueprint
-*.xccheckout
-
-## compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
+# Flutter/Dart/Pub related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
 build/
-DerivedData/
-*.moved-aside
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
 
-## Gcc Patch
-/*.gcno
+# Web related
+lib/generated_plugin_registrant.dart
 
-## macOS
-.DS_Store
+# Symbolication related
+app.*.symbols
 
-## SPM
-.swiftpm
-.build/
+# Obfuscation related
+app.*.map.json
 
-## CocoaPods
-Pods/
+# Android Studio will place build artifacts here
+android/app/debug
+android/app/profile
+android/app/release
 
-## Carthage
-Carthage/Build/
-
-## fastlane
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots/**/*.png
-fastlane/test_output
-
-## Code Injection
-iOSInjectionProject/
-
-## Xcode project
-*.xcodeproj/project.xcworkspace/
-*.xcodeproj/xcshareddata/
-
-## Python
-__pycache__/
-*.py[cod]
-*$py.class
-
-## Temporary files
-*.tmp
-*.temp
-
-# Flutter/Dart related
 # Miscellaneous
 *.class
 *.log
@@ -79,35 +39,9 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code settings (uncomment if you want to ignore)
 #.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/flutter_assets
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/Runner.app
-**/ios/Runner/GeneratedPluginRegistrant.*
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-/build/
-
-# Web related
-lib/generated_plugin_registrant.dart
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Temporary files
+*.tmp
+*.temp
