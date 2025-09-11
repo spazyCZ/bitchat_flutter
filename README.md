@@ -30,7 +30,29 @@ This project is released into the public domain. See the [LICENSE](LICENSE) file
 1. [Install Flutter](https://docs.flutter.dev/get-started/install) (ensure you have Flutter SDK and Dart installed)
 2. Run `flutter doctor` to verify your environment
 
-### Getting Started
+### Quick Setup for Ubuntu Linux
+
+For Ubuntu users, we provide an automated installation script:
+
+```bash
+git clone <repo-url>
+cd bitchat_flutter
+chmod +x install_ubuntu.sh
+./install_ubuntu.sh
+```
+
+This script will:
+- Install all required system dependencies (GTK, Bluetooth, CMake, etc.)
+- Install Flutter (via snap or manual installation)
+- Enable Linux desktop support
+- Configure Bluetooth permissions
+- Set up the development environment
+
+**Important:** After running the script, you must reboot your system for Bluetooth group membership to take effect.
+
+### Manual Setup
+
+### Manual Setup
 
 1. Clone this repository:
    ```bash
@@ -47,7 +69,36 @@ This project is released into the public domain. See the [LICENSE](LICENSE) file
    ```
    - For Android: Connect a device or start an emulator
    - For iOS: Open with Xcode and set up signing if needed
+   - For Linux: Run `flutter run -d linux` (ensure Linux desktop support is enabled)
    - For Web/Desktop: See [Flutter docs](https://docs.flutter.dev/get-started/web) for details
+
+### Linux Development
+
+The app includes full Linux support with Bluetooth LE functionality. For Linux development:
+
+1. Ensure you have the required system packages:
+   ```bash
+   sudo apt-get install clang cmake ninja-build pkg-config libgtk-3-dev libbluetooth-dev bluez
+   ```
+
+2. Enable Linux desktop support:
+   ```bash
+   flutter config --enable-linux-desktop
+   ```
+
+3. Add your user to the bluetooth group:
+   ```bash
+   sudo usermod -a -G bluetooth $USER
+   ```
+
+4. Reboot your system for group membership to take effect
+
+5. Run the app on Linux:
+   ```bash
+   flutter run -d linux
+   ```
+
+The app will display a BLE device scanner interface that can discover nearby Bluetooth devices.
 
 ## Usage
 
@@ -138,6 +189,24 @@ For detailed protocol documentation, see the [Technical Whitepaper](WHITEPAPER.m
 1. Set your development team in project settings
 2. Configure code signing
 3. Archive and distribute through App Store or TestFlight
+
+## Platform Support
+
+This app is designed to work on multiple platforms:
+
+- **Android**: Full Bluetooth LE mesh networking support
+- **iOS**: Native iOS support with full feature set
+- **Linux (Ubuntu)**: Desktop support with Bluetooth LE functionality
+- **macOS**: Native macOS support
+- **Windows**: Basic support (Bluetooth functionality may be limited)
+
+### Linux Ubuntu Specific Features
+
+- Native GTK3 interface
+- Full Bluetooth Low Energy support via BlueZ
+- Automatic dependency installation script
+- Desktop integration
+- Terminal-friendly CLI output and debugging
 
 ## Android Compatibility
 
